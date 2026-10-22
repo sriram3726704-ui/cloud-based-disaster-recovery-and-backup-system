@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudVault – Cloud-Based Disaster Recovery and Backup System</title>
+  <meta name="description" content="Cloud-Based Disaster Recovery and Backup System built with Firebase Authentication, Cloud Storage, and Firestore. Upload, manage, and restore backups with ease.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Setup Banner (Visible when Firebase credentials need configuration) -->
+  <div id="setup-alert-bar" class="setup-alert-bar" style="display: none;">
+    <div class="setup-alert-content">
+      <span class="setup-alert-badge">Setup Notice</span>
+      <span>Firebase credentials not configured yet. Cloud storage & authentication require your Firebase Project keys.</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="btn-open-setup-wizard" class="setup-alert-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Setup Wizard
+      </button>
+      <button id="btn-quick-demo-mode" class="setup-alert-btn" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);">
+        Explore Demo Preview
+      </button>
+    </div>
+  </div>
+
+  <!-- App Main Structure -->
+  <div id="app-root" class="app-wrapper">
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="app-sidebar" class="app-sidebar">
+      <!-- Brand Header -->
+      <div class="sidebar-header">
+        <div class="brand-icon-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+            <path d="m12 12-3 3 3 3"/>
+            <path d="M9 15h9"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>CloudVault</h1>
+          <span>Disaster Recovery</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Main Navigation</div>
+
+        <button class="nav-link active" data-tab="tab-dashboard" id="nav-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-link" data-tab="tab-files" id="nav-files">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Backup Management</span>
+          <span id="nav-badge-file-count" class="nav-badge-pill">0</span>
+        </button>
+
+        <button class="nav-link" data-tab="tab-upload" id="nav-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>New File Backup</span>
+        </button>
+
+        <button class="nav-link" data-tab="tab-recovery" id="nav-recovery">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          <span>Disaster Recovery Hub</span>
+        </button>
+
+        <div class="nav-section-label">Operations & Governance</div>
+
+        <button class="nav-link" data-tab="tab-audit" id="nav-audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Activity Audit Logs</span>
+        </button>
+
+        <button class="nav-link" data-tab="tab-security" id="nav-security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Security & Rules</span>
+        </button>
+
+        <div class="nav-section-label">Academic Resources</div>
+
+        <button class="nav-link" id="nav-btn-open-viva">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>College Viva Guide</span>
+        </button>
+      </nav>
+
+      <!-- Storage Quota Widget -->
+      <div class="sidebar-storage-widget">
+        <div class="storage-widget-header">
+          <span>Cloud Storage Quota</span>
+          <span id="sidebar-quota-percent">0%</span>
+        </div>
+        <div class="storage-progress-track">
+          <div id="sidebar-quota-fill" class="storage-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="storage-widget-footer">
+          <span id="sidebar-quota-used">0 MB used</span>
+          <span>100 MB Cap</span>
+        </div>
+      </div>
+
+      <!-- User Profile Footer -->
+      <div class="sidebar-footer">
+        <div class="user-profile-badge">
+          <div id="user-avatar-circle" class="user-avatar-circle">U</div>
+          <div class="user-meta-info">
+            <div id="user-display-name" class="user-display-name">Loading User...</div>
+            <div id="user-display-email" class="user-display-email">user@college.edu</div>
+          </div>
+          <button id="btn-logout" class="logout-icon-btn" title="Sign Out">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport Area -->
+    <div class="main-viewport">
+      
+      <!-- Top App Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button id="btn-mobile-menu" class="menu-toggle-btn" aria-label="Toggle Navigation">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="header-search-bar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search-input" placeholder="Search backups by name or type...">
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div id="badge-cloud-status" class="dr-health-badge">
+            <span class="status-dot active"></span>
+            <span id="label-cloud-status">Cloud Storage Online</span>
+          </div>
+
+          <button id="btn-header-quick-upload" class="btn btn-primary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload Backup</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Content Tabs -->
+      <main class="content-area">
+
+        <!-- ================================================================
+             TAB 1: DASHBOARD
+             ================================================================ -->
+        <div id="tab-dashboard" class="tab-pane active">
+          
+          <div class="section-header">
+            <div>
+              <h2 class="heading-xl">Disaster Recovery Dashboard</h2>
+              <p class="text-muted">Real-time overview of cloud backups, storage utilization, and recovery readiness.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button id="btn-dashboard-refresh" class="btn btn-secondary btn-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refresh Data
+              </button>
+              <button id="btn-quick-run-drill" class="btn btn-primary btn-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Simulate DR Drill
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Metric Cards -->
+          <div class="stats-grid">
+            
+            <div class="stat-card blue">
+              <div class="stat-header">
+                <div>
+                  <div class="stat-label">Total Backed Up Files</div>
+                  <div id="stat-total-files" class="stat-value">0</div>
+                </div>
+                <div class="stat-icon blue">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                </div>
+              </div>
+              <div class="stat-subtext">
+                <span class="status-dot active"></span> Across all supported formats
+              </div>
+            </div>
+
+            <div class="stat-card cyan">
+              <div class="stat-header">
+                <div>
+                  <div class="stat-label">Total Storage Used</div>
+                  <div id="stat-total-storage" class="stat-value">0 MB</div>
+                </div>
+                <div class="stat-icon cyan">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+              </div>
+              <div class="stat-progress-bar">
+                <div id="stat-storage-progress" class="stat-progress-val"></div>
+              </div>
+              <div class="stat-subtext" id="stat-storage-subtext">0% of 100 MB free allocation</div>
+            </div>
+
+            <div class="stat-card green">
+              <div class="stat-header">
+                <div>
+                  <div class="stat-label">Active Protected Replicas</div>
+                  <div id="stat-active-backups" class="stat-value">0</div>
+                </div>
+                <div class="stat-icon green">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+              </div>
+              <div class="stat-subtext">
+                <span class="badge badge-success" style="padding: 2px 8px;">100% Health Status</span>
+              </div>
+            </div>
+
+            <div class="stat-card purple">
+              <div class="stat-header">
+                <div>
+                  <div class="stat-label">Recovery Point Objective (RPO)</div>
+                  <div id="stat-rpo-val" class="stat-value">< 1 hr</div>
+                </div>
+                <div class="stat-icon purple">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              </div>
+              <div class="stat-subtext">
+                <span>RTO Estimated: </span> <strong id="stat-rto-val">&lt; 3.0s</strong>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Two Column Layout: Recent Files vs Category Distribution -->
+          <div class="dashboard-widget-row">
+            
+            <!-- Left: Recent Backups -->
+            <div class="card-panel">
+              <div class="card-panel-header">
+                <div class="card-panel-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Recent Cloud Backups</span>
+                </div>
+                <button id="btn-view-all-backups" class="btn btn-ghost btn-sm" style="color: var(--primary);">
+                  View All Backups &rarr;
+                </button>
+              </div>
+
+              <!-- Quick Table -->
+              <div id="dashboard-recent-table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>File Name</th>
+                      <th>Size</th>
+                      <th>Backup Date</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-recent-tbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+                <div id="dashboard-recent-empty" class="empty-state" style="display: none; padding: 40px 10px;">
+                  <div class="empty-state-icon" style="width: 54px; height: 54px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="empty-state-title" style="font-size: 1rem;">No backups uploaded yet</div>
+                  <div class="empty-state-desc" style="font-size: 0.82rem;">Upload your first document or file to initiate cloud replication.</div>
+                  <button class="btn btn-primary btn-sm btn-nav-upload-trigger">Upload Now</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Storage Distribution -->
+            <div class="card-panel">
+              <div class="card-panel-header">
+                <div class="card-panel-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                  <span>File Distribution</span>
+                </div>
+              </div>
+
+              <div class="category-bars-list">
+                
+                <div class="category-bar-item">
+                  <div class="category-bar-info">
+                    <span class="category-bar-name">
+                      <span class="status-dot" style="background: #2563eb;"></span> Documents (PDF, DOCX)
+                    </span>
+                    <span id="cat-docs-text" class="category-bar-count">0 files (0 MB)</span>
+                  </div>
+                  <div class="category-meter">
+                    <div id="cat-docs-fill" class="category-fill docs" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="category-bar-item">
+                  <div class="category-bar-info">
+                    <span class="category-bar-name">
+                      <span class="status-dot" style="background: #0284c7;"></span> Images (JPG, PNG)
+                    </span>
+                    <span id="cat-imgs-text" class="category-bar-count">0 files (0 MB)</span>
+                  </div>
+                  <div class="category-meter">
+                    <div id="cat-imgs-fill" class="category-fill images" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="category-bar-item">
+                  <div class="category-bar-info">
+                    <span class="category-bar-name">
+                      <span class="status-dot" style="background: #7c3aed;"></span> Archives (ZIP, TAR)
+                    </span>
+                    <span id="cat-archives-text" class="category-bar-count">0 files (0 MB)</span>
+                  </div>
+                  <div class="category-meter">
+                    <div id="cat-archives-fill" class="category-fill archives" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="category-bar-item">
+                  <div class="category-bar-info">
+                    <span class="category-bar-name">
+                      <span class="status-dot" style="background: #059669;"></span> Code & Data (TXT, CSV)
+                    </span>
+                    <span id="cat-code-text" class="category-bar-count">0 files (0 MB)</span>
+                  </div>
+                  <div class="category-meter">
+                    <div id="cat-code-fill" class="category-fill code" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="category-bar-item">
+                  <div class="category-bar-info">
+                    <span class="category-bar-name">
+                      <span class="status-dot" style="background: #64748b;"></span> Others
+                    </span>
+                    <span id="cat-others-text" class="category-bar-count">0 files (0 MB)</span>
+                  </div>
+                  <div class="category-meter">
+                    <div id="cat-others-fill" class="category-fill others" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Disaster Recovery Guarantee Box -->
+              <div style="margin-top: 24px; padding: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--border-radius-md); font-size: 0.8rem; color: #1e3a8a; line-height: 1.5;">
+                <strong>🛡️ 3-2-1 DR Standard:</strong>
+                All cloud artifacts are stored with multi-zone redundancy and AES-256 cloud encryption.
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ================================================================
+             TAB 2: BACKUP MANAGEMENT & FILE EXPLORER
+             ================================================================ -->
+        <div id="tab-files" class="tab-pane">
+          
+          <div class="section-header">
+            <div>
+              <h2 class="heading-xl">Backup File Repository</h2>
+              <p class="text-muted">Manage, inspect, restore, and organize all backed up assets stored in Firebase Cloud Storage.</p>
+            </div>
+            <div>
+              <button class="btn btn-primary btn-sm btn-nav-upload-trigger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Upload Backup
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Bar: Filter Pills + Search -->
+          <div class="files-control-bar">
+            <div class="filter-pills-group" id="filter-pills">
+              <button class="filter-pill active" data-filter="all">All Backups (<span id="count-pill-all">0</span>)</button>
+              <button class="filter-pill" data-filter="docs">Documents</button>
+              <button class="filter-pill" data-filter="images">Images</button>
+              <button class="filter-pill" data-filter="archives">Archives</button>
+              <button class="filter-pill" data-filter="code">Text & Data</button>
+            </div>
+
+            <div class="table-search-input">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="files-table-search" placeholder="Filter files...">
+            </div>
+          </div>
+
+          <!-- Files Table Card -->
+          <div class="table-card">
+            <div class="data-table-container">
+              <table class="data-table" id="backups-full-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Size</th>
+                    <th>Cloud Storage Path</th>
+                    <th>Backup Date</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Restore / Manage</th>
+                  </tr>
+                </thead>
+                <tbody id="backups-table-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty State for Files Table -->
+            <div id="files-empty-state" class="empty-state" style="display: none;">
+              <div class="empty-state-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="empty-state-title">No Backups Found</div>
+              <div class="empty-state-desc">You haven't backed up any files yet or no files match your active filter. Upload a document now to ensure zero data loss.</div>
+              <button class="btn btn-primary btn-sm btn-nav-upload-trigger">Upload Backup Now</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================================================================
+             TAB 3: NEW FILE BACKUP (UPLOAD ZONE)
+             ================================================================ -->
+        <div id="tab-upload" class="tab-pane">
+          
+          <div class="section-header">
+            <div>
+              <h2 class="heading-xl">Upload New Backup</h2>
+              <p class="text-muted">Encrypt and replicate important documents into Firebase Cloud Storage.</p>
+            </div>
+          </div>
+
+          <!-- Upload Dropzone Card -->
+          <div class="upload-card-wrapper">
+            <div id="file-dropzone" class="dropzone-container">
+              <input type="file" id="file-input-element" style="display: none;" multiple>
+              <div class="dropzone-icon-circle">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="dropzone-title">Drag & Drop files here, or click to browse</div>
+              <div class="dropzone-subtitle">Individual file limit: 25 MB • Securely stored in isolated user cloud bucket</div>
+              
+              <div class="supported-chips">
+                <span class="type-chip">PDF</span>
+                <span class="type-chip">DOCX / DOC</span>
+                <span class="type-chip">JPG / PNG</span>
+                <span class="type-chip">TXT / CSV</span>
+                <span class="type-chip">ZIP</span>
+                <span class="type-chip">XLSX / PPTX</span>
+              </div>
+            </div>
+
+            <!-- Upload Progress Box -->
+            <div id="upload-progress-box" class="upload-progress-box">
+              <div class="upload-file-details">
+                <div class="upload-filename">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                  <span id="upload-active-filename">document.pdf</span>
+                </div>
+                <div id="upload-active-percent" class="upload-percentage">0%</div>
+              </div>
+              <div class="upload-bar-track">
+                <div id="upload-bar-fill" class="upload-bar-fill"></div>
+              </div>
+              <div class="upload-status-sub">
+                <span id="upload-status-bytes">0 KB / 0 KB</span>
+                <span id="upload-status-speed">Transmitting to Cloud Storage...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Architecture & Security Note -->
+          <div class="card-panel" style="background: #f8fafc; border-left: 4px solid var(--primary);">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px;">🔐 How CloudVault Protects Your Backups</h3>
+            <ul style="padding-left: 20px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7;">
+              <li><strong>Client-Side Validation:</strong> Checks file size (max 25MB) and mime-type prior to transmission.</li>
+              <li><strong>Isolated Pathing:</strong> Stored directly under <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">users/{userId}/files/</code> enforcing storage security rules.</li>
+              <li><strong>Firestore Metadata Index:</strong> Filename, file size, content type, and SHA timestamp are saved for quick discovery and instant recovery.</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- ================================================================
+             TAB 4: DISASTER RECOVERY & RESTORE HUB
+             ================================================================ -->
+        <div id="tab-recovery" class="tab-pane">
+          
+          <!-- Hero Banner -->
+          <div class="dr-hero-banner">
+            <div class="dr-hero-content">
+              <div class="dr-hero-tag">Disaster Recovery (DR) Command Center</div>
+              <h2 class="dr-hero-title">Continuous Cloud Protection & Zero Data Loss Guarantee</h2>
+              <p class="dr-hero-desc">
+                CloudVault enforces enterprise disaster recovery protocols. If local hardware fails, files are preserved in high-durability cloud storage and can be restored immediately.
+              </p>
+              
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button id="btn-trigger-dr-drill" class="btn btn-primary" style="background: #ffffff; color: #1e3a8a;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Run Disaster Recovery Drill
+                </button>
+                <button id="btn-batch-restore-all" class="btn btn-secondary" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Restore All Backups
+                </button>
+              </div>
+
+              <!-- KPI Strip -->
+              <div class="dr-kpi-strip">
+                <div class="dr-kpi-item">
+                  <div id="dr-rpo-kpi" class="dr-kpi-val">&lt; 1 hr</div>
+                  <div class="dr-kpi-lbl">Recovery Point Objective (RPO)</div>
+                </div>
+                <div class="dr-kpi-item">
+                  <div id="dr-rto-kpi" class="dr-kpi-val">&lt; 3.0s</div>
+                  <div class="dr-kpi-lbl">Recovery Time Objective (RTO)</div>
+                </div>
+                <div class="dr-kpi-item">
+                  <div class="dr-kpi-val">99.99%</div>
+                  <div class="dr-kpi-lbl">Cloud Durability Rating</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Academic / Disaster Recovery Explanations -->
+          <div class="dashboard-widget-row">
+            
+            <div class="card-panel">
+              <h3 class="card-panel-title" style="margin-bottom: 12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Core Disaster Recovery Principles (For Faculty Viva)
+              </h3>
+              
+              <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+                <div>
+                  <strong style="color: var(--primary);">1. Recovery Point Objective (RPO):</strong>
+                  The maximum acceptable age of files that must be recovered from backup storage for normal operations to resume. CloudVault ensures continuous cloud syncing to keep RPO close to zero.
+                </div>
+                <div>
+                  <strong style="color: var(--primary);">2. Recovery Time Objective (RTO):</strong>
+                  The maximum acceptable duration of time that can elapse after a disaster before systems and files are fully restored. CloudVault achieves RTO under 5 seconds through direct cloud streaming.
+                </div>
+                <div>
+                  <strong style="color: var(--primary);">3. The 3-2-1 Backup Strategy:</strong>
+                  Keep at least <strong>3</strong> copies of data, across <strong>2</strong> different media types, with <strong>1</strong> copy stored off-site in the cloud.
+                </div>
+                <div style="background: var(--warning-bg); border-left: 4px solid var(--warning); padding: 12px; border-radius: var(--border-radius-sm); color: #92400e;">
+                  <strong>⚠️ Critical Recovery Notice:</strong>
+                  Deleted backups cannot be restored unless an independent external snapshot was exported. Once permanently deleted from Cloud Storage, the file blocks are unrecoverable.
+                </div>
+              </div>
+            </div>
+
+            <!-- Restore Action Panel -->
+            <div class="card-panel">
+              <h3 class="card-panel-title" style="margin-bottom: 12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Quick Restore Shortcuts
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                Select any backup to test instant download or cloud verification.
+              </p>
+              <div id="quick-restore-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ================================================================
+             TAB 5: ACTIVITY AUDIT LOGS
+             ================================================================ -->
+        <div id="tab-audit" class="tab-pane">
+          
+          <div class="section-header">
+            <div>
+              <h2 class="heading-xl">Disaster Recovery Activity Audit Trail</h2>
+              <p class="text-muted">Immutable event logs documenting all upload, restore, drill, and deletion events for compliance.</p>
+            </div>
+            <button id="btn-refresh-audit-logs" class="btn btn-secondary btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh Logs
+            </button>
+          </div>
+
+          <div class="table-card">
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Target Resource</th>
+                    <th>Details / Status</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-logs-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <div id="audit-empty-state" class="empty-state" style="display: none;">
+              <div class="empty-state-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div class="empty-state-title">No Audit Logs Yet</div>
+              <div class="empty-state-desc">All future backup actions (uploads, downloads, deletions, drills) will be recorded here automatically.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================================================================
+             TAB 6: SECURITY & ARCHITECTURE
+             ================================================================ -->
+        <div id="tab-security" class="tab-pane">
+          
+          <div class="section-header">
+            <div>
+              <h2 class="heading-xl">Security Rules & Architecture</h2>
+              <p class="text-muted">Review server-side access controls, user isolation, and Firebase rules configuration.</p>
+            </div>
+          </div>
+
+          <div class="dashboard-widget-row">
+            
+            <!-- Firestore Security Rules Card -->
+            <div class="card-panel">
+              <div class="card-panel-header">
+                <div class="card-panel-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span>Firestore Security Rules (firestore.rules)</span>
+                </div>
+                <span class="badge badge-success">Enforced</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">
+                Ensures only authenticated users can read or write documents where <code style="color: var(--primary);">userId == request.auth.uid</code>.
+              </p>
+              <pre style="background: #0f172a; color: #f8fafc; padding: 16px; border-radius: var(--border-radius-md); font-size: 0.78rem; overflow-x: auto; max-height: 280px;"><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /backups/{backupId} {
+      allow create: if request.auth != null 
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.fileSize &lt;= 26214400;
+      allow read, update, delete: if request.auth != null 
+                                  &amp;&amp; resource.data.userId == request.auth.uid;
+    }
+    match /activity_logs/{logId} {
+      allow create, read: if request.auth != null 
+                          &amp;&amp; request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Append-only audit log
+    }
+  }
+}</code></pre>
+            </div>
+
+            <!-- Firebase Storage Security Rules Card -->
+            <div class="card-panel">
+              <div class="card-panel-header">
+                <div class="card-panel-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <span>Storage Security Rules (storage.rules)</span>
+                </div>
+                <span class="badge badge-success">Enforced</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">
+                Strict folder isolation preventing users from reading or writing into another user's storage path.
+              </p>
+              <pre style="background: #0f172a; color: #f8fafc; padding: 16px; border-radius: var(--border-radius-md); font-size: 0.78rem; overflow-x: auto; max-height: 280px;"><code>rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{userId}/{allPaths=**} {
+      allow read, delete: if request.auth != null 
+                          &amp;&amp; request.auth.uid == userId;
+      allow write: if request.auth != null 
+                   &amp;&amp; request.auth.uid == userId
+                   &amp;&amp; request.resource.size &lt; 25 * 1024 * 1024;
+    }
+  }
+}</code></pre>
+            </div>
+
+          </div>
+
+          <!-- Architecture Diagram Summary -->
+          <div class="card-panel" style="margin-top: 24px;">
+            <h3 class="card-panel-title" style="margin-bottom: 14px;">College Project Architecture Flow</h3>
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 20px; border-radius: var(--border-radius-md); font-family: monospace; font-size: 0.85rem; line-height: 1.8;">
+              [ Client Browser (HTML/CSS/JS) ]<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;│<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;├── 1. Firebase Authentication (JWT Tokens, Session State)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;├── 2. Direct File Upload Stream ──► [ Firebase Cloud Storage ] (users/{userId}/files/...)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;├── 3. Metadata & Audit Logs  ──► [ Cloud Firestore Database ] (backups, activity_logs)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;└── 4. Restore & Recovery Download ◄── Secure Signed Storage URL (Client Download Stream)
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================
+       AUTH MODAL / OVERLAY (Shown when user is not logged in)
+       ======================================================================== -->
+  <div id="auth-modal-overlay" class="modal-backdrop">
+    <div class="modal-dialog auth-card" style="max-width: 440px;">
+      
+      <div class="auth-header">
+        <div class="auth-logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m12 12-3 3 3 3"/><path d="M9 15h9"/></svg>
+        </div>
+        <h2 id="auth-form-title" style="font-size: 1.45rem; font-weight: 800; color: var(--text-main);">CloudVault Sign In</h2>
+        <p id="auth-form-subtitle" class="text-muted">Enter credentials to access your disaster recovery vault</p>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="auth-form">
+        <div id="auth-name-group" class="form-group" style="display: none;">
+          <label class="form-label" for="auth-input-name">Full Name</label>
+          <input type="text" id="auth-input-name" class="form-input" placeholder="e.g. John Doe">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-input-email">College / Professional Email</label>
+          <input type="email" id="auth-input-email" class="form-input" placeholder="student@college.edu" required>
+        </div>
+
+        <div class="form-group" id="auth-password-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+            <label class="form-label" for="auth-input-password" style="margin-bottom: 0;">Password</label>
+            <button type="button" id="btn-auth-forgot" style="font-size: 0.78rem; color: var(--primary); font-weight: 600;">Forgot Password?</button>
+          </div>
+          <input type="password" id="auth-input-password" class="form-input" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" id="btn-auth-submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 6px;">
+          <span>Sign In to Vault</span>
+        </button>
+      </form>
+
+      <!-- Toggle Links -->
+      <div style="margin-top: 20px; text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
+        <span id="auth-toggle-prompt">Don't have an account?</span>
+        <button type="button" id="btn-auth-toggle-mode" style="color: var(--primary); font-weight: 700; margin-left: 4px;">
+          Create Free Account
+        </button>
+      </div>
+
+      <!-- Faculty / Viva Demo Mode Shortcut -->
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
+        <button type="button" id="btn-auth-demo-shortcut" class="btn btn-secondary btn-sm" style="width: 100%;">
+          🎓 Faculty Demo: Instant Preview Mode
+        </button>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">
+          Explore all UI tabs and disaster drill features without Firebase keys
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       FIREBASE SETUP WIZARD MODAL
+       ======================================================================== -->
+  <div id="modal-setup-wizard" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Firebase Configuration Wizard</span>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-setup-wizard">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px; line-height: 1.6;">
+          CloudVault integrates with <strong>Firebase Authentication</strong>, <strong>Cloud Storage</strong>, and <strong>Firestore</strong>. Follow the quick steps below to connect your Firebase project:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 14px; border-radius: var(--border-radius-md);">
+            <strong style="color: var(--primary);">Step 1: Create a Firebase Project</strong>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+              Visit <a href="https://console.firebase.google.com" target="_blank" rel="noopener">Firebase Console</a>, click "Add Project", and name it (e.g., <code>cloudvault-dr</code>).
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 14px; border-radius: var(--border-radius-md);">
+            <strong style="color: var(--primary);">Step 2: Enable Firebase Services</strong>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+              • <strong>Authentication:</strong> Enable "Email/Password" sign-in.<br>
+              • <strong>Cloud Firestore:</strong> Create database (Test mode or production with rules).<br>
+              • <strong>Cloud Storage:</strong> Create storage bucket.
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 14px; border-radius: var(--border-radius-md);">
+            <strong style="color: var(--primary);">Step 3: Register Web App & Get Keys</strong>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+              Under Project Settings &rarr; "General" &rarr; "Your Apps", click the Web (&lt;/&gt;) icon. Copy the <code>firebaseConfig</code> object.
+            </div>
+          </div>
+
+          <div style="background: #eff6ff; border: 1px solid var(--primary-border); padding: 14px; border-radius: var(--border-radius-md);">
+            <strong style="color: var(--primary);">Step 4: Update Configuration</strong>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+              Paste your keys directly into <code>js/firebase-config.js</code> or paste the JSON object below for quick browser testing:
+            </div>
+            <textarea id="wizard-config-json" style="width: 100%; height: 110px; margin-top: 10px; font-family: monospace; font-size: 0.8rem; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;" placeholder='{ "apiKey": "AIzaSy...", "authDomain": "...", "projectId": "...", "storageBucket": "..." }'></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="modal-setup-wizard">Close</button>
+        <button id="btn-save-wizard-config" class="btn btn-primary">Save & Connect Firebase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       DELETE CONFIRMATION MODAL
+       ======================================================================== -->
+  <div id="modal-delete-confirm" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--danger);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Confirm Cloud Backup Deletion</span>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-delete-confirm">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px; font-weight: 600; color: var(--text-main);">
+          Are you sure you want to permanently delete this backup from Cloud Storage?
+        </p>
+        <div style="background: var(--surface-muted); padding: 12px; border-radius: var(--border-radius-md); font-family: monospace; font-size: 0.85rem; margin-bottom: 16px;">
+          <span id="delete-modal-filename">filename.pdf</span> (<span id="delete-modal-filesize">0 KB</span>)
+        </div>
+        <div style="background: var(--danger-bg); border-left: 4px solid var(--danger); padding: 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; color: #991b1b;">
+          <strong>⚠️ Irreversible Disaster Recovery Notice:</strong>
+          Deleted files cannot be restored unless a separate offline snapshot exists. Once purged from cloud storage, the replica is permanently removed.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="modal-delete-confirm">Cancel</button>
+        <button id="btn-confirm-delete-action" class="btn btn-danger">Permanently Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       DISASTER RECOVERY DRILL MODAL (Faculty Viva Demonstration)
+       ======================================================================== -->
+  <div id="modal-dr-drill" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Disaster Recovery Simulation Drill</span>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-dr-drill">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 20px;">
+          Executing live disaster failover scenario: Testing local outage response, cloud snapshot integrity, and RTO speed.
+        </p>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px;">
+            <span id="drill-status-text">Initiating simulation...</span>
+            <span id="drill-percent-text">0%</span>
+          </div>
+          <div class="upload-bar-track">
+            <div id="drill-progress-bar" class="upload-bar-fill" style="width: 0%; background: linear-gradient(90deg, #10b981 0%, #0284c7 100%);"></div>
+          </div>
+        </div>
+
+        <div id="drill-log-box" style="background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 0.78rem; padding: 14px; border-radius: var(--border-radius-md); height: 140px; overflow-y: auto; line-height: 1.6;">
+          <div>[DRILL] Initializing Disaster Recovery Drill scenario...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="modal-dr-drill">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       COLLEGE VIVA & PRESENTATION GUIDE MODAL
+       ======================================================================== -->
+  <div id="modal-viva-guide" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>College Project Viva & Presentation Guide</span>
+        </div>
+        <button class="modal-close-btn" data-close-modal="modal-viva-guide">&times;</button>
+      </div>
+      <div class="modal-body" style="line-height: 1.6; font-size: 0.9rem;">
+        <h3 style="color: var(--primary); margin-bottom: 8px;">1. Project Summary for Faculty</h3>
+        <p style="margin-bottom: 16px; color: var(--text-secondary);">
+          <strong>"CloudVault"</strong> is a Cloud-Based Disaster Recovery and Backup System designed to protect critical enterprise documents from hardware failure, accidental deletion, and ransomware. It uses Firebase Authentication for secure multi-tenant user isolation, Cloud Storage for redundant file replication, and Firestore for metadata tracking and tamper-proof audit trails.
+        </p>
+
+        <h3 style="color: var(--primary); margin-bottom: 8px;">2. Frequently Asked Viva Questions</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+            <strong>Q1: What is the difference between RPO and RTO?</strong>
+            <p style="margin-top: 4px; color: var(--text-secondary); font-size: 0.85rem;">
+              <strong>RPO (Recovery Point Objective):</strong> How much data loss can be tolerated (in time). CloudVault keeps RPO &lt; 1 hour by providing continuous uploads.<br>
+              <strong>RTO (Recovery Time Objective):</strong> How fast data can be recovered after a disaster. CloudVault achieves RTO &lt; 5 seconds via high-speed cloud download streams.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+            <strong>Q2: How is security and user isolation enforced?</strong>
+            <p style="margin-top: 4px; color: var(--text-secondary); font-size: 0.85rem;">
+              Security is enforced at two levels: First, client-side validation prevents oversized (&gt;25MB) or disallowed files. Second, server-side <strong>Firestore and Storage Security Rules</strong> check <code style="color: var(--primary);">request.auth.uid == userId</code> to strictly ensure no user can ever access or delete another user's backups.
+            </p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+            <strong>Q3: Why can't a deleted file be restored?</strong>
+            <p style="margin-top: 4px; color: var(--text-secondary); font-size: 0.85rem;">
+              When a user deletes a backup, CloudVault calls Firebase Storage's <code style="color: var(--primary);">deleteObject()</code> API, releasing the cloud storage blocks to optimize costs. Hence, in disaster recovery principles, deleted files cannot be restored unless a secondary immutable snapshot or versioning bucket policy is preserved.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-close-modal="modal-viva-guide">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main JavaScript Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "cloudvault-disaster-recovery",
+  "version": "1.0.0",
+  "description": "CloudVault – Cloud-Based Disaster Recovery and Backup System for College Project Demonstration",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "python -m http.server 3000",
+    "deploy": "firebase deploy"
+  },
+  "keywords": [
+    "disaster-recovery",
+    "cloud-backup",
+    "firebase",
+    "college-project",
+    "firestore",
+    "firebase-storage",
+    "firebase-auth"
+  ],
+  "author": "CloudVault Developer",
+  "license": "MIT"
+}
